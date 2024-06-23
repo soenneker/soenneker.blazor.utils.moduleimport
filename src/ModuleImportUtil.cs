@@ -44,19 +44,19 @@ public class ModuleImportUtil : IModuleImportUtil
 
     public async ValueTask<IJSObjectReference> Import(string name, CancellationToken cancellationToken = default)
     {
-        ModuleImportItem item = await _modules.Get(name, cancellationToken);
+        ModuleImportItem item = await _modules.Get(name, [name, cancellationToken]);
         return item.ScriptReference;
     }
 
     public async ValueTask WaitUntilLoaded(string name, CancellationToken cancellationToken = default)
     {
-        ModuleImportItem item = await _modules.Get(name, cancellationToken);
+        ModuleImportItem item = await _modules.Get(name, [name, cancellationToken]);
         await item.IsLoaded;
     }
 
     public async ValueTask DisposeModule(string name, CancellationToken cancellationToken = default)
     {
-        ModuleImportItem item = await _modules.Get(name, cancellationToken);
+        ModuleImportItem item = await _modules.Get(name, [name, cancellationToken]);
         await item.DisposeAsync();
     }
 
