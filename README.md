@@ -35,6 +35,7 @@ Here's an example of how to use the `ModuleImportUtil` in a Blazor component:
 ```csharp
 @page "/example"
 @inject IModuleImportUtil ModuleImportUtil
+@implements IAsyncDisposable
 
 <h3>Module Import Example</h3>
 
@@ -47,6 +48,11 @@ Here's an example of how to use the `ModuleImportUtil` in a Blazor component:
         await ModuleImportUtil.WaitUntilLoaded("exampleModule");
 
         // Guaranteed that the module has been added to the DOM, and available at this point
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await ModuleImportUtil.DisposeModule("exampleModule");
     }
 }
 ```
