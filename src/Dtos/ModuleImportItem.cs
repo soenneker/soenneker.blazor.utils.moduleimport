@@ -4,16 +4,19 @@ using Microsoft.JSInterop;
 
 namespace Soenneker.Blazor.Utils.ModuleImport.Dtos;
 
-internal class ModuleImportItem : IAsyncDisposable
+public class ModuleImportItem : IAsyncDisposable
 {
-    public TaskCompletionSource<bool> ModuleLoadedTcs = new();
+    public readonly TaskCompletionSource<bool> ModuleLoadedTcs = new();
 
-    public IJSObjectReference ScriptReference { get; set; }
+    public IJSObjectReference? ScriptReference { get; set; }
 
     public Task IsLoaded => ModuleLoadedTcs.Task;
 
     public ValueTask DisposeAsync()
     {
-        return ScriptReference.DisposeAsync();
+        if (ScriptReference != null)
+            return ScriptReference.DisposeAsync();
+
+        return ValueTask.CompletedTask;
     }
 }

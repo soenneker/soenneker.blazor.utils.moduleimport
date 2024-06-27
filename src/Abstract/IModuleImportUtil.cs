@@ -2,6 +2,8 @@ using Microsoft.JSInterop;
 using System;
 using System.Threading.Tasks;
 using System.Threading;
+using Soenneker.Blazor.Utils.ModuleImport.Dtos;
+using System.Diagnostics.Contracts;
 
 namespace Soenneker.Blazor.Utils.ModuleImport.Abstract;
 
@@ -10,6 +12,16 @@ namespace Soenneker.Blazor.Utils.ModuleImport.Abstract;
 /// </summary>
 public interface IModuleImportUtil : IAsyncDisposable
 {
+    /// <summary>
+    /// Asynchronously retrieves a module by its name. If the module is not already loaded, it will be loaded.
+    /// </summary>
+    /// <param name="name">The name of the module to be retrieved.</param>
+    /// <param name="cancellationToken">An optional token to cancel the operation.</param>
+    /// <returns>A <see cref="ValueTask{TResult}"/> that represents the asynchronous operation, containing the <see cref="ModuleImportItem"/> for the specified module.</returns>
+    /// <exception cref="ArgumentException">Thrown if the module name is null or invalid.</exception>
+    [Pure]
+    ValueTask<ModuleImportItem> GetModule(string name, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Imports a JavaScript module by its name.
     /// </summary>

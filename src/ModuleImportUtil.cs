@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using Microsoft.JSInterop;
 using Soenneker.Blazor.Utils.ModuleImport.Dtos;
+using Soenneker.Extensions.ValueTask;
 using Soenneker.Utils.SingletonDictionary;
 
 namespace Soenneker.Blazor.Utils.ModuleImport;
@@ -17,47 +18,49 @@ public class ModuleImportUtil : IModuleImportUtil
     {
         _modules = new SingletonDictionary<ModuleImportItem>(async objectArray =>
         {
+            var item = new ModuleImportItem();
+
             try
             {
                 var name = objectArray[0] as string;
                 var cancellationToken = (CancellationToken) objectArray[1];
 
-                var item = new ModuleImportItem
-                {
-                    ScriptReference = await jsRuntime.InvokeAsync<IJSObjectReference>(
-                        "import", cancellationToken, $"./_content/{name}")
-                };
+                item.ScriptReference = await jsRuntime.InvokeAsync<IJSObjectReference>(
+                    "import", cancellationToken, $"./_content/{name}");
 
                 item.ModuleLoadedTcs.SetResult(true);
-
-                return item;
             }
             catch (Exception ex)
             {
                 // Handle exceptions and set the task completion source as failed
-                var item = new ModuleImportItem();
                 item.ModuleLoadedTcs.SetException(ex);
-                return item;
             }
+
+            return item;
         });
+    }
+
+    public ValueTask<ModuleImportItem> GetModule(string name, CancellationToken cancellationToken = default)
+    {
+        return _modules.Get(name, [name, cancellationToken]);
     }
 
     public async ValueTask<IJSObjectReference> Import(string name, CancellationToken cancellationToken = default)
     {
-        ModuleImportItem item = await _modules.Get(name, [name, cancellationToken]);
-        return item.ScriptReference;
+        ModuleImportItem item = await GetModule(name, cancellationToken).NoSync();
+        return item.ScriptReference!;
     }
 
     public async ValueTask WaitUntilLoaded(string name, CancellationToken cancellationToken = default)
     {
-        ModuleImportItem item = await _modules.Get(name, [name, cancellationToken]);
+        ModuleImportItem item = await GetModule(name, cancellationToken).NoSync();
         await item.IsLoaded;
     }
 
     public async ValueTask DisposeModule(string name, CancellationToken cancellationToken = default)
     {
-        ModuleImportItem item = await _modules.Get(name, [name, cancellationToken]);
-        await item.DisposeAsync();
+        ModuleImportItem item = await GetModule(name, cancellationToken).NoSync();
+        await item.DisposeAsync().NoSync();
     }
 
     public ValueTask DisposeAsync()
