@@ -6,16 +6,19 @@ using Microsoft.JSInterop;
 using Soenneker.Blazor.Utils.ModuleImport.Dtos;
 using Soenneker.Extensions.ValueTask;
 using Soenneker.Utils.SingletonDictionary;
+using Soenneker.Blazor.Utils.JsVariable.Abstract;
 
 namespace Soenneker.Blazor.Utils.ModuleImport;
 
 /// <inheritdoc cref="IModuleImportUtil"/>
 public class ModuleImportUtil : IModuleImportUtil
 {
+    private readonly IJsVariableInterop _jsVariableInterop;
     private readonly SingletonDictionary<ModuleImportItem> _modules;
 
-    public ModuleImportUtil(IJSRuntime jsRuntime)
+    public ModuleImportUtil(IJSRuntime jsRuntime, IJsVariableInterop jsVariableInterop)
     {
+        _jsVariableInterop = jsVariableInterop;
         _modules = new SingletonDictionary<ModuleImportItem>(async objectArray =>
         {
             var item = new ModuleImportItem();
@@ -57,14 +60,21 @@ public class ModuleImportUtil : IModuleImportUtil
         await item.IsLoaded;
     }
 
+    public async ValueTask WaitUntilLoadedAndAvailable(string name, string variableName, int delay = 100, CancellationToken cancellationToken = default)
+    {
+        await WaitUntilLoaded(name,cancellationToken).NoSync();
+        await _jsVariableInterop.WaitForVariable(variableName, delay, cancellationToken).NoSync();
+    }
+
     public async ValueTask DisposeModule(string name, CancellationToken cancellationToken = default)
     {
         ModuleImportItem item = await GetModule(name, cancellationToken).NoSync();
         await item.DisposeAsync().NoSync();
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        return _modules.DisposeAsync();
+        await _jsVariableInterop.DisposeAsync().NoSync();
+        await _modules.DisposeAsync().NoSync();
     }
 }

@@ -38,6 +38,8 @@ public interface IModuleImportUtil : IAsyncDisposable
     /// <returns>A task that represents the asynchronous operation.</returns>
     ValueTask WaitUntilLoaded(string name, CancellationToken cancellationToken = default);
 
+    ValueTask WaitUntilLoadedAndAvailable(string name, string variableName, int delay = 100, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Disposes of the specified JavaScript module.
     /// </summary>
