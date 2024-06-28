@@ -45,6 +45,6 @@
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
         <PackageReference Include="Microsoft.JSInterop" Version="8.0.6" />
         <PackageReference Include="Soenneker.Blazor.Utils.JsVariable" Version="2.1.3" />
-        <PackageReference Include="Soenneker.Utils.SingletonDictionary" Version="2.1.305" />
+        <PackageReference Include="Soenneker.Utils.SingletonDictionary" Version="2.1.306" />
     </ItemGroup>
 </Project>
