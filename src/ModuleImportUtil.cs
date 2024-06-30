@@ -72,9 +72,8 @@ public class ModuleImportUtil : IModuleImportUtil
         await item.DisposeAsync().NoSync();
     }
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
-        await _jsVariableInterop.DisposeAsync().NoSync();
-        await _modules.DisposeAsync().NoSync();
+        return _modules.DisposeAsync();
     }
 }
