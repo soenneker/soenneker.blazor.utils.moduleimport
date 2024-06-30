@@ -19,17 +19,16 @@ public class ModuleImportUtil : IModuleImportUtil
     public ModuleImportUtil(IJSRuntime jsRuntime, IJsVariableInterop jsVariableInterop)
     {
         _jsVariableInterop = jsVariableInterop;
-        _modules = new SingletonDictionary<ModuleImportItem>(async objectArray =>
+        _modules = new SingletonDictionary<ModuleImportItem>(async (key, objects) =>
         {
             var item = new ModuleImportItem();
 
             try
             {
-                var name = objectArray[0] as string;
-                var cancellationToken = (CancellationToken) objectArray[1];
+                var cancellationToken = (CancellationToken) objects[0];
 
                 item.ScriptReference = await jsRuntime.InvokeAsync<IJSObjectReference>(
-                    "import", cancellationToken, $"./_content/{name}");
+                    "import", cancellationToken, $"./_content/{key}");
 
                 item.ModuleLoadedTcs.SetResult(true);
             }
@@ -45,7 +44,7 @@ public class ModuleImportUtil : IModuleImportUtil
 
     public ValueTask<ModuleImportItem> GetModule(string name, CancellationToken cancellationToken = default)
     {
-        return _modules.Get(name, [name, cancellationToken]);
+        return _modules.Get(name, cancellationToken);
     }
 
     public async ValueTask<IJSObjectReference> Import(string name, CancellationToken cancellationToken = default)
@@ -62,7 +61,7 @@ public class ModuleImportUtil : IModuleImportUtil
 
     public async ValueTask ImportAndWaitUntilAvailable(string name, string variableName, int delay = 100, CancellationToken cancellationToken = default)
     {
-        await ImportAndWait(name,cancellationToken).NoSync();
+        await ImportAndWait(name, cancellationToken).NoSync();
         await _jsVariableInterop.WaitForVariable(variableName, delay, cancellationToken).NoSync();
     }
 
