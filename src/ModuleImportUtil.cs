@@ -54,15 +54,15 @@ public class ModuleImportUtil : IModuleImportUtil
         return item.ScriptReference!;
     }
 
-    public async ValueTask WaitUntilLoaded(string name, CancellationToken cancellationToken = default)
+    public async ValueTask ImportAndWait(string name, CancellationToken cancellationToken = default)
     {
         ModuleImportItem item = await GetModule(name, cancellationToken).NoSync();
         await item.IsLoaded;
     }
 
-    public async ValueTask WaitUntilLoadedAndAvailable(string name, string variableName, int delay = 100, CancellationToken cancellationToken = default)
+    public async ValueTask ImportAndWaitUntilAvailable(string name, string variableName, int delay = 100, CancellationToken cancellationToken = default)
     {
-        await WaitUntilLoaded(name,cancellationToken).NoSync();
+        await ImportAndWait(name,cancellationToken).NoSync();
         await _jsVariableInterop.WaitForVariable(variableName, delay, cancellationToken).NoSync();
     }
 
