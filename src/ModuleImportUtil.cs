@@ -19,16 +19,14 @@ public class ModuleImportUtil : IModuleImportUtil
     public ModuleImportUtil(IJSRuntime jsRuntime, IJsVariableInterop jsVariableInterop)
     {
         _jsVariableInterop = jsVariableInterop;
-        _modules = new SingletonDictionary<ModuleImportItem>(async (key, objects) =>
+        _modules = new SingletonDictionary<ModuleImportItem>(async (key, token, _) =>
         {
             var item = new ModuleImportItem();
 
             try
             {
-                var cancellationToken = (CancellationToken) objects[0];
-
                 item.ScriptReference = await jsRuntime.InvokeAsync<IJSObjectReference>(
-                    "import", cancellationToken, $"./_content/{key}");
+                    "import", token, $"./_content/{key}");
 
                 item.ModuleLoadedTcs.SetResult(true);
             }
