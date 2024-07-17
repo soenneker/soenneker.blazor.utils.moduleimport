@@ -11,11 +11,11 @@ namespace Soenneker.Blazor.Utils.ModuleImport.Registrars;
 public static class ModuleImportUtilRegistrar
 {
     /// <summary>
-    /// Adds <see cref="IModuleImportUtil"/> as a singleton service. <para/>
+    /// Adds <see cref="IModuleImportUtil"/> as a scoped service. <para/>
     /// </summary>
     public static void AddModuleImportUtil(this IServiceCollection services)
     {
         services.AddJsVariableInterop();
-        services.TryAddSingleton<IModuleImportUtil, ModuleImportUtil>();
+        services.TryAddScoped<IModuleImportUtil, ModuleImportUtil>();
     }
 }
