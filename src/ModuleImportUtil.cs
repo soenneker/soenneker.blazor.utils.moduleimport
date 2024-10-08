@@ -26,7 +26,7 @@ public class ModuleImportUtil : IModuleImportUtil
             try
             {
                 item.ScriptReference = await jsRuntime.InvokeAsync<IJSObjectReference>(
-                    "import", token, $"./_content/{key}");
+                    "import", token, $"./_content/{key}").NoSync();
 
                 item.ModuleLoadedTcs.SetResult(true);
             }
@@ -71,6 +71,8 @@ public class ModuleImportUtil : IModuleImportUtil
 
     public ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
+
         return _modules.DisposeAsync();
     }
 }
