@@ -43,6 +43,6 @@
 
     <ItemGroup>
         <PackageReference Include="Soenneker.Blazor.Utils.JsVariable" Version="3.0.406" />
-        <PackageReference Include="Soenneker.Utils.SingletonDictionary" Version="3.0.578" />
+        <PackageReference Include="Soenneker.Utils.SingletonDictionary" Version="3.0.580" />
     </ItemGroup>
 </Project>
