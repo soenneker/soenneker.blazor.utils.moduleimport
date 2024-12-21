@@ -15,7 +15,7 @@ public static class ModuleImportUtilRegistrar
     /// </summary>
     public static IServiceCollection AddModuleImportUtilAsScoped(this IServiceCollection services)
     {
-        services.AddJsVariableInterop();
+        services.AddJsVariableInteropAsScoped();
         services.TryAddScoped<IModuleImportUtil, ModuleImportUtil>();
 
         return services;
