@@ -13,9 +13,11 @@ public static class ModuleImportUtilRegistrar
     /// <summary>
     /// Adds <see cref="IModuleImportUtil"/> as a scoped service. <para/>
     /// </summary>
-    public static void AddModuleImportUtil(this IServiceCollection services)
+    public static IServiceCollection AddModuleImportUtilAsScoped(this IServiceCollection services)
     {
         services.AddJsVariableInterop();
         services.TryAddScoped<IModuleImportUtil, ModuleImportUtil>();
+
+        return services;
     }
 }
