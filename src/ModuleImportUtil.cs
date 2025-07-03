@@ -11,7 +11,7 @@ using Soenneker.Blazor.Utils.JsVariable.Abstract;
 namespace Soenneker.Blazor.Utils.ModuleImport;
 
 /// <inheritdoc cref="IModuleImportUtil"/>
-public class ModuleImportUtil : IModuleImportUtil
+public sealed class ModuleImportUtil : IModuleImportUtil
 {
     private readonly IJsVariableInterop _jsVariableInterop;
     private readonly SingletonDictionary<ModuleImportItem> _modules;
@@ -71,8 +71,6 @@ public class ModuleImportUtil : IModuleImportUtil
 
     public ValueTask DisposeAsync()
     {
-        GC.SuppressFinalize(this);
-
         return _modules.DisposeAsync();
     }
 }
