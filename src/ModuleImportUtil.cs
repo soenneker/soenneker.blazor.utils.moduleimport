@@ -26,7 +26,7 @@ public sealed class ModuleImportUtil : IModuleImportUtil
             try
             {
                 item.ScriptReference = await jsRuntime.InvokeAsync<IJSObjectReference>(
-                    "import", token, $"./_content/{key}").NoSync();
+                    "import", token, $"./_content/{key}");
 
                 item.ModuleLoadedTcs.SetResult(true);
             }
@@ -47,26 +47,26 @@ public sealed class ModuleImportUtil : IModuleImportUtil
 
     public async ValueTask<IJSObjectReference> Import(string name, CancellationToken cancellationToken = default)
     {
-        ModuleImportItem item = await GetModule(name, cancellationToken).NoSync();
+        ModuleImportItem item = await GetModule(name, cancellationToken);
         return item.ScriptReference!;
     }
 
     public async ValueTask ImportAndWait(string name, CancellationToken cancellationToken = default)
     {
-        ModuleImportItem item = await GetModule(name, cancellationToken).NoSync();
+        ModuleImportItem item = await GetModule(name, cancellationToken);
         await item.IsLoaded;
     }
 
     public async ValueTask ImportAndWaitUntilAvailable(string name, string variableName, int delay = 100, CancellationToken cancellationToken = default)
     {
-        await ImportAndWait(name, cancellationToken).NoSync();
-        await _jsVariableInterop.WaitForVariable(variableName, delay, cancellationToken).NoSync();
+        await ImportAndWait(name, cancellationToken);
+        await _jsVariableInterop.WaitForVariable(variableName, delay, cancellationToken);
     }
 
     public async ValueTask DisposeModule(string name, CancellationToken cancellationToken = default)
     {
-        ModuleImportItem item = await GetModule(name, cancellationToken).NoSync();
-        await item.DisposeAsync().NoSync();
+        ModuleImportItem item = await GetModule(name, cancellationToken);
+        await item.DisposeAsync();
     }
 
     public ValueTask DisposeAsync()
