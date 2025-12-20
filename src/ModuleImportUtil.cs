@@ -19,7 +19,7 @@ public sealed class ModuleImportUtil : IModuleImportUtil
     public ModuleImportUtil(IJSRuntime jsRuntime, IJsVariableInterop jsVariableInterop)
     {
         _jsVariableInterop = jsVariableInterop;
-        _modules = new SingletonDictionary<ModuleImportItem>(async (key, token, _) =>
+        _modules = new SingletonDictionary<ModuleImportItem>(async (key, token) =>
         {
             var item = new ModuleImportItem();
 
