@@ -12,31 +12,34 @@ namespace Soenneker.Blazor.Utils.ModuleImport;
 /// <inheritdoc cref="IModuleImportUtil"/>
 public sealed class ModuleImportUtil : IModuleImportUtil
 {
+    private readonly IJSRuntime _jsRuntime;
     private readonly IJsVariableInterop _jsVariableInterop;
     private readonly SingletonDictionary<ModuleImportItem> _modules;
 
     public ModuleImportUtil(IJSRuntime jsRuntime, IJsVariableInterop jsVariableInterop)
     {
+        _jsRuntime = jsRuntime;
         _jsVariableInterop = jsVariableInterop;
-        _modules = new SingletonDictionary<ModuleImportItem>(async (key, token) =>
+
+        _modules = new SingletonDictionary<ModuleImportItem>(InitializeModule);
+    }
+
+    private async ValueTask<ModuleImportItem> InitializeModule(string key, CancellationToken cancellationToken)
+    {
+        var item = new ModuleImportItem();
+
+        try
         {
-            var item = new ModuleImportItem();
+            item.ScriptReference = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", cancellationToken, $"./_content/{key}");
 
-            try
-            {
-                item.ScriptReference = await jsRuntime.InvokeAsync<IJSObjectReference>(
-                    "import", token, $"./_content/{key}");
+            item.ModuleLoadedTcs.SetResult(true);
+        }
+        catch (Exception ex)
+        {
+            item.ModuleLoadedTcs.SetException(ex);
+        }
 
-                item.ModuleLoadedTcs.SetResult(true);
-            }
-            catch (Exception ex)
-            {
-                // Handle exceptions and set the task completion source as failed
-                item.ModuleLoadedTcs.SetException(ex);
-            }
-
-            return item;
-        });
+        return item;
     }
 
     public ValueTask<ModuleImportItem> GetModule(string name, CancellationToken cancellationToken = default)
