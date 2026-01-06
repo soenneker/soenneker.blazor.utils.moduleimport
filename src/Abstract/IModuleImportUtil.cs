@@ -10,7 +10,7 @@ namespace Soenneker.Blazor.Utils.ModuleImport.Abstract;
 /// <summary>
 /// A Blazor utility library assisting with asynchronous module loading
 /// </summary>
-public interface IModuleImportUtil : IAsyncDisposable
+public interface IModuleImportUtil : IAsyncDisposable, IDisposable
 {
     /// <summary>
     /// Asynchronously retrieves a module by its name. If the module is not already loaded, it will be loaded.

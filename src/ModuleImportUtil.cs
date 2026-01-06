@@ -75,4 +75,9 @@ public sealed class ModuleImportUtil : IModuleImportUtil
     {
         return _modules.DisposeAsync();
     }
+
+    public void Dispose()
+    {
+        _modules.Dispose();
+    }
 }
