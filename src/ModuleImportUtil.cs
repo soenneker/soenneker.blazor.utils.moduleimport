@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using Microsoft.JSInterop;
 using Soenneker.Blazor.Utils.ModuleImport.Dtos;
-using Soenneker.Utils.SingletonDictionary;
+using Soenneker.Dictionaries.Singletons;
 using Soenneker.Blazor.Utils.JsVariable.Abstract;
 
 namespace Soenneker.Blazor.Utils.ModuleImport;
