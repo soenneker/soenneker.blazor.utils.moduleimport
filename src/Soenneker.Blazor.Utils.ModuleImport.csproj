@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?><Project Sdk="Microsoft.NET.Sdk.Razor">
+<?xml version="1.0" encoding="utf-8"?><Project Sdk="Microsoft.NET.Sdk.Razor">
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
@@ -43,5 +43,7 @@
     <ItemGroup>
         <PackageReference Include="Soenneker.Blazor.Utils.JsVariable" Version="4.0.1205" />
         <PackageReference Include="Soenneker.Dictionaries.Singletons" Version="4.0.9" />
+        <PackageReference Include="Soenneker.Extensions.CancellationTokens" Version="4.0.7" />
+        <PackageReference Include="Soenneker.Utils.CancellationScopes" Version="4.0.22" />
     </ItemGroup>
 </Project>

@@ -6,6 +6,8 @@ using Microsoft.JSInterop;
 using Soenneker.Blazor.Utils.ModuleImport.Dtos;
 using Soenneker.Dictionaries.Singletons;
 using Soenneker.Blazor.Utils.JsVariable.Abstract;
+using Soenneker.Extensions.CancellationTokens;
+using Soenneker.Utils.CancellationScopes;
 
 namespace Soenneker.Blazor.Utils.ModuleImport;
 
@@ -15,6 +17,8 @@ public sealed class ModuleImportUtil : IModuleImportUtil
     private readonly IJSRuntime _jsRuntime;
     private readonly IJsVariableInterop _jsVariableInterop;
     private readonly SingletonDictionary<ModuleImportItem> _modules;
+
+    private readonly CancellationScope _cancellationScope = new();
 
     public ModuleImportUtil(IJSRuntime jsRuntime, IJsVariableInterop jsVariableInterop)
     {
@@ -44,40 +48,65 @@ public sealed class ModuleImportUtil : IModuleImportUtil
 
     public ValueTask<ModuleImportItem> GetModule(string name, CancellationToken cancellationToken = default)
     {
-        return _modules.Get(name, cancellationToken);
+        var linked = _cancellationScope.CancellationToken.Link(cancellationToken, out var source);
+
+        using (source)
+            return _modules.Get(name, linked);
     }
 
     public async ValueTask<IJSObjectReference> Import(string name, CancellationToken cancellationToken = default)
     {
-        ModuleImportItem item = await GetModule(name, cancellationToken);
-        return item.ScriptReference!;
+        var linked = _cancellationScope.CancellationToken.Link(cancellationToken, out var source);
+
+        using (source)
+        {
+            ModuleImportItem item = await GetModule(name, linked);
+            return item.ScriptReference!;
+        }
     }
 
     public async ValueTask ImportAndWait(string name, CancellationToken cancellationToken = default)
     {
-        ModuleImportItem item = await GetModule(name, cancellationToken);
-        await item.IsLoaded;
+        var linked = _cancellationScope.CancellationToken.Link(cancellationToken, out var source);
+
+        using (source)
+        {
+            ModuleImportItem item = await GetModule(name, linked);
+            await item.IsLoaded;
+        }
     }
 
     public async ValueTask ImportAndWaitUntilAvailable(string name, string variableName, int delay = 100, CancellationToken cancellationToken = default)
     {
-        await ImportAndWait(name, cancellationToken);
-        await _jsVariableInterop.WaitForVariable(variableName, delay, cancellationToken);
+        var linked = _cancellationScope.CancellationToken.Link(cancellationToken, out var source);
+
+        using (source)
+        {
+            await ImportAndWait(name, linked);
+            await _jsVariableInterop.WaitForVariable(variableName, delay, linked);
+        }
     }
 
     public async ValueTask DisposeModule(string name, CancellationToken cancellationToken = default)
     {
-        ModuleImportItem item = await GetModule(name, cancellationToken);
-        await item.DisposeAsync();
+        var linked = _cancellationScope.CancellationToken.Link(cancellationToken, out var source);
+
+        using (source)
+        {
+            ModuleImportItem item = await GetModule(name, linked);
+            await item.DisposeAsync();
+        }
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        return _modules.DisposeAsync();
+        await _modules.DisposeAsync();
+        await _cancellationScope.DisposeAsync();
     }
 
     public void Dispose()
     {
         _modules.Dispose();
+        _cancellationScope.DisposeAsync().GetAwaiter().GetResult();
     }
 }
