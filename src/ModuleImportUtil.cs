@@ -46,12 +46,12 @@ public sealed class ModuleImportUtil : IModuleImportUtil
         return item;
     }
 
-    public ValueTask<ModuleImportItem> GetModule(string name, CancellationToken cancellationToken = default)
+    public async ValueTask<ModuleImportItem> GetModule(string name, CancellationToken cancellationToken = default)
     {
         var linked = _cancellationScope.CancellationToken.Link(cancellationToken, out var source);
 
         using (source)
-            return _modules.Get(name, linked);
+            return await _modules.Get(name, linked);
     }
 
     public async ValueTask<IJSObjectReference> Import(string name, CancellationToken cancellationToken = default)
