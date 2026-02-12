@@ -43,7 +43,5 @@
     <ItemGroup>
         <PackageReference Include="Soenneker.Blazor.Utils.JsVariable" Version="4.0.1211" />
         <PackageReference Include="Soenneker.Dictionaries.Singletons" Version="4.0.11" />
-        <PackageReference Include="Soenneker.Extensions.CancellationTokens" Version="4.0.7" />
-        <PackageReference Include="Soenneker.Utils.CancellationScopes" Version="4.0.23" />
     </ItemGroup>
 </Project>
