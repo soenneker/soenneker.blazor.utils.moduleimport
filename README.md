@@ -1,6 +1,7 @@
 [![](https://img.shields.io/nuget/v/soenneker.blazor.utils.moduleimport.svg?style=for-the-badge)](https://www.nuget.org/packages/soenneker.blazor.utils.moduleimport/)
 [![](https://img.shields.io/github/actions/workflow/status/soenneker/soenneker.blazor.utils.moduleimport/publish-package.yml?style=for-the-badge)](https://github.com/soenneker/soenneker.blazor.utils.moduleimport/actions/workflows/publish-package.yml)
 [![](https://img.shields.io/nuget/dt/soenneker.blazor.utils.moduleimport.svg?style=for-the-badge)](https://www.nuget.org/packages/soenneker.blazor.utils.moduleimport/)
+[![](https://img.shields.io/github/actions/workflow/status/soenneker/soenneker.blazor.utils.moduleimport/codeql.yml?label=CodeQL&style=for-the-badge)](https://github.com/soenneker/soenneker.blazor.utils.moduleimport/actions/workflows/codeql.yml)
 
 # ![](https://user-images.githubusercontent.com/4441470/224455560-91ed3ee7-f510-4041-a8d2-3fc093025112.png) Soenneker.Blazor.Utils.ModuleImport
 ### A Blazor utility library assisting with asynchronous module loading
