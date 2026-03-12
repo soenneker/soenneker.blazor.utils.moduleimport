@@ -28,7 +28,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\Soenneker.Blazor.Utils.ModuleImport.csproj" />
+        <ProjectReference Include="..\..\src\Soenneker.Blazor.Utils.ModuleImport\Soenneker.Blazor.Utils.ModuleImport.csproj" />
     </ItemGroup>
 
     <ItemGroup>
