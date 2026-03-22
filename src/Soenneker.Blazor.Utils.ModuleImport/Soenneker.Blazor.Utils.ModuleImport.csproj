@@ -1,4 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?><Project Sdk="Microsoft.NET.Sdk.Razor">
+<?xml version="1.0" encoding="utf-8"?>
+
+<Project Sdk="Microsoft.NET.Sdk.Razor">
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
@@ -32,11 +34,12 @@
         <LangVersion>latest</LangVersion>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageIcon>icon.png</PackageIcon>
-    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+        <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
         <PackageReleaseNotes Condition="'$(PACKAGE_RELEASE_NOTES)' != ''">
             $(PACKAGE_RELEASE_NOTES)
-        </PackageReleaseNotes></PropertyGroup>
-    
+        </PackageReleaseNotes>
+    </PropertyGroup>
+
     <ItemGroup>
         <None Include="..\..\README.md" Pack="true" PackagePath="\" />
         <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
@@ -44,7 +47,10 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Soenneker.Blazor.Utils.JsVariable" Version="4.0.1269" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
+        <PackageReference Include="Microsoft.JSInterop" Version="10.0.5" />
         <PackageReference Include="Soenneker.Dictionaries.Singletons" Version="4.0.39" />
+        <PackageReference Include="Soenneker.Extensions.CancellationTokens" Version="4.0.16" />
+        <PackageReference Include="Soenneker.Utils.CancellationScopes" Version="4.0.36" />
     </ItemGroup>
 </Project>

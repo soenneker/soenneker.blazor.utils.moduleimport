@@ -39,16 +39,6 @@ public interface IModuleImportUtil : IAsyncDisposable, IDisposable
     ValueTask ImportAndWait(string name, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Waits until the specified JavaScript module is loaded and JS variable is available (not undefined).
-    /// </summary>
-    /// <param name="name">The name of the script or style to wait for.</param>
-    /// <param name="variableName">The name of the JavaScript variable to check for availability.</param>
-    /// <param name="delay">The delay in milliseconds between each check for the variable's availability. The default is 100 milliseconds.</param>
-    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-    /// <returns>A task that represents the asynchronous operation. The task completes when the variable is available or the operation is cancelled.</returns>
-    ValueTask ImportAndWaitUntilAvailable(string name, string variableName, int delay = 100, CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Disposes of the specified JavaScript module.
     /// </summary>
     /// <param name="name">The name of the JavaScript module to dispose.</param>
