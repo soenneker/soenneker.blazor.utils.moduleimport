@@ -33,7 +33,7 @@ public sealed class ModuleImportUtil : IModuleImportUtil
 
         try
         {
-            item.ScriptReference = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", cancellationToken, $"./_content/{name}");
+            item.ScriptReference = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", cancellationToken, name);
             item.ModuleLoadedTcs.SetResult(true);
         }
         catch (Exception ex)
