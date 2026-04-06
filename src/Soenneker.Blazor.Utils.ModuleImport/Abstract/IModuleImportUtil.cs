@@ -1,48 +1,90 @@
-using Microsoft.JSInterop;
 using System;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.JSInterop;
 using Soenneker.Blazor.Utils.ModuleImport.Dtos;
-using System.Diagnostics.Contracts;
 
 namespace Soenneker.Blazor.Utils.ModuleImport.Abstract;
 
 /// <summary>
-/// A Blazor utility library assisting with asynchronous module loading
+/// Provides utilities for importing JavaScript ES modules via <c>import()</c> and caching the resulting module references.
 /// </summary>
+/// <remarks>
+/// This utility supports two module sources:
+/// <list type="bullet">
+/// <item>
+/// <description>
+/// <b>Content modules</b> – Loaded from the application's static web assets under <c>./_content/</c>.
+/// </description>
+/// </item>
+/// <item>
+/// <description>
+/// <b>External modules</b> – Loaded from absolute URLs (e.g., CDN-hosted ESM).
+/// </description>
+/// </item>
+/// </list>
+/// <para>
+/// Imported modules are cached to prevent redundant network requests and ensure reuse across calls.
+/// </para>
+/// <para>
+/// This utility uses JavaScript dynamic <c>import()</c>. It does not support Subresource Integrity (SRI).
+/// For SRI-enabled module loading, use a resource loader that injects a <c>&lt;script type="module"&gt;</c> tag.
+/// </para>
+/// </remarks>
 public interface IModuleImportUtil : IAsyncDisposable, IDisposable
 {
     /// <summary>
-    /// Asynchronously retrieves a module by its name. If the module is not already loaded, it will be loaded.
+    /// Gets a cached content module item, initializing it if it has not yet been imported.
     /// </summary>
-    /// <param name="name">The name of the module to be retrieved.</param>
-    /// <param name="cancellationToken">An optional token to cancel the operation.</param>
-    /// <returns>A <see cref="ValueTask{TResult}"/> that represents the asynchronous operation, containing the <see cref="ModuleImportItem"/> for the specified module.</returns>
-    /// <exception cref="ArgumentException">Thrown if the module name is null or invalid.</exception>
-    [Pure]
-    ValueTask<ModuleImportItem> GetModule(string name, CancellationToken cancellationToken = default);
+    /// <param name="name">The module path relative to <c>./_content/</c>.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="ModuleImportItem"/> representing the module and its load state.</returns>
+    ValueTask<ModuleImportItem> GetContentModule(string name, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Imports a JavaScript module by its name.
+    /// Gets a cached external module item, initializing it if it has not yet been imported.
     /// </summary>
-    /// <param name="name">The name of the JavaScript module to import.</param>
-    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the imported JavaScript module reference.</returns>
-    ValueTask<IJSObjectReference> Import(string name, CancellationToken cancellationToken = default);
+    /// <param name="url">The absolute URL of the module.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="ModuleImportItem"/> representing the module and its load state.</returns>
+    ValueTask<ModuleImportItem> GetExternalModule(string url, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Waits until the specified module is loaded.
+    /// Imports a JavaScript module from the application's static web assets (<c>./_content/</c>).
     /// </summary>
-    /// <param name="name">The name of the JavaScript module.</param>
-    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
-    ValueTask ImportAndWait(string name, CancellationToken cancellationToken = default);
+    /// <param name="name">The module path relative to <c>./_content/</c>.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// An <see cref="IJSObjectReference"/> representing the imported module, allowing invocation of its exported members.
+    /// </returns>
+    ValueTask<IJSObjectReference> ImportContentModule(string name, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Disposes of the specified JavaScript module.
+    /// Imports a JavaScript module from an external URL using dynamic <c>import()</c>.
     /// </summary>
-    /// <param name="name">The name of the JavaScript module to dispose.</param>
-    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
-    ValueTask DisposeModule(string name, CancellationToken cancellationToken = default);
+    /// <param name="url">The absolute URL of the module.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// An <see cref="IJSObjectReference"/> representing the imported module, allowing invocation of its exported members.
+    /// </returns>
+    /// <remarks>
+    /// This method uses dynamic <c>import()</c> and does not support Subresource Integrity (SRI).
+    /// </remarks>
+    ValueTask<IJSObjectReference> ImportExternalModule(string url, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Disposes a previously imported content module and removes it from the cache.
+    /// </summary>
+    /// <param name="name">The module path relative to <c>./_content/</c>.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="ValueTask"/> representing the asynchronous disposal operation.</returns>
+    ValueTask DisposeContentModule(string name, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Disposes a previously imported external module and removes it from the cache.
+    /// </summary>
+    /// <param name="url">The absolute URL of the module.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="ValueTask"/> representing the asynchronous disposal operation.</returns>
+    ValueTask DisposeExternalModule(string url, CancellationToken cancellationToken = default);
 }

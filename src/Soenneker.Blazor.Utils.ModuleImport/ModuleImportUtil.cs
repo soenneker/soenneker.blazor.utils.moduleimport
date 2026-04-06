@@ -1,8 +1,8 @@
 using System;
-using Soenneker.Blazor.Utils.ModuleImport.Abstract;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.JSInterop;
+using Soenneker.Blazor.Utils.ModuleImport.Abstract;
 using Soenneker.Blazor.Utils.ModuleImport.Dtos;
 using Soenneker.Dictionaries.Singletons;
 using Soenneker.Extensions.CancellationTokens;
@@ -14,7 +14,8 @@ namespace Soenneker.Blazor.Utils.ModuleImport;
 public sealed class ModuleImportUtil : IModuleImportUtil
 {
     private readonly IJSRuntime _jsRuntime;
-    private readonly SingletonDictionary<ModuleImportItem> _modules;
+    private readonly SingletonDictionary<ModuleImportItem> _contentModules;
+    private readonly SingletonDictionary<ModuleImportItem> _externalModules;
 
     private readonly CancellationScope _cancellationScope = new();
 
@@ -22,17 +23,17 @@ public sealed class ModuleImportUtil : IModuleImportUtil
     {
         _jsRuntime = jsRuntime;
 
-        _modules = new SingletonDictionary<ModuleImportItem>(InitializeModule);
+        _contentModules = new SingletonDictionary<ModuleImportItem>(InitializeContentModule);
+        _externalModules = new SingletonDictionary<ModuleImportItem>(InitializeExternalModule);
     }
 
-    private async ValueTask<ModuleImportItem> InitializeModule(string key, CancellationToken cancellationToken)
+    private async ValueTask<ModuleImportItem> InitializeContentModule(string name, CancellationToken cancellationToken)
     {
         var item = new ModuleImportItem();
 
         try
         {
-            item.ScriptReference = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", cancellationToken, $"./_content/{key}");
-
+            item.ScriptReference = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", cancellationToken, $"./_content/{name}");
             item.ModuleLoadedTcs.SetResult(true);
         }
         catch (Exception ex)
@@ -43,62 +44,102 @@ public sealed class ModuleImportUtil : IModuleImportUtil
         return item;
     }
 
-    public async ValueTask<ModuleImportItem> GetModule(string name, CancellationToken cancellationToken = default)
+    private async ValueTask<ModuleImportItem> InitializeExternalModule(string url, CancellationToken cancellationToken)
+    {
+        var item = new ModuleImportItem();
+
+        try
+        {
+            item.ScriptReference = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", cancellationToken, url);
+            item.ModuleLoadedTcs.SetResult(true);
+        }
+        catch (Exception ex)
+        {
+            item.ModuleLoadedTcs.SetException(ex);
+        }
+
+        return item;
+    }
+
+    public async ValueTask<ModuleImportItem> GetContentModule(string name, CancellationToken cancellationToken = default)
     {
         CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
 
         using (source)
-            return await GetModuleInternal(name, linked);
+            return await _contentModules.Get(name, linked);
     }
 
-    public async ValueTask<IJSObjectReference> Import(string name, CancellationToken cancellationToken = default)
+    public async ValueTask<ModuleImportItem> GetExternalModule(string url, CancellationToken cancellationToken = default)
     {
         CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
 
         using (source)
-            return await ImportInternal(name, linked);
+            return await _externalModules.Get(url, linked);
     }
 
-    public async ValueTask ImportAndWait(string name, CancellationToken cancellationToken = default)
+    public async ValueTask<IJSObjectReference> ImportContentModule(string name, CancellationToken cancellationToken = default)
     {
         CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
 
         using (source)
-            _ = await ImportInternal(name, linked);
+            return await ImportContentModuleInternal(name, linked);
     }
 
-    public async ValueTask DisposeModule(string name, CancellationToken cancellationToken = default)
+    public async ValueTask<IJSObjectReference> ImportExternalModule(string url, CancellationToken cancellationToken = default)
+    {
+        CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
+
+        using (source)
+            return await ImportExternalModuleInternal(url, linked);
+    }
+
+    public async ValueTask DisposeContentModule(string name, CancellationToken cancellationToken = default)
     {
         CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
 
         using (source)
         {
-            ModuleImportItem item = await GetModuleInternal(name, linked);
+            ModuleImportItem item = await _contentModules.Get(name, linked);
             await item.DisposeAsync();
         }
     }
 
-    private ValueTask<ModuleImportItem> GetModuleInternal(string name, CancellationToken cancellationToken)
+    public async ValueTask DisposeExternalModule(string url, CancellationToken cancellationToken = default)
     {
-        return _modules.Get(name, cancellationToken);
+        CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
+
+        using (source)
+        {
+            ModuleImportItem item = await _externalModules.Get(url, linked);
+            await item.DisposeAsync();
+        }
     }
 
-    private async ValueTask<IJSObjectReference> ImportInternal(string name, CancellationToken cancellationToken)
+    private async ValueTask<IJSObjectReference> ImportContentModuleInternal(string name, CancellationToken cancellationToken)
     {
-        ModuleImportItem item = await GetModuleInternal(name, cancellationToken);
-        await item.IsLoaded;
+        ModuleImportItem item = await _contentModules.Get(name, cancellationToken);
+        await item.Loaded;
+        return item.ScriptReference!;
+    }
+
+    private async ValueTask<IJSObjectReference> ImportExternalModuleInternal(string url, CancellationToken cancellationToken)
+    {
+        ModuleImportItem item = await _externalModules.Get(url, cancellationToken);
+        await item.Loaded;
         return item.ScriptReference!;
     }
 
     public async ValueTask DisposeAsync()
     {
-        await _modules.DisposeAsync();
+        await _contentModules.DisposeAsync();
+        await _externalModules.DisposeAsync();
         await _cancellationScope.DisposeAsync();
     }
 
     public void Dispose()
     {
-        _modules.Dispose();
+        _contentModules.Dispose();
+        _externalModules.Dispose();
         _cancellationScope.DisposeAsync().GetAwaiter().GetResult();
     }
 }

@@ -11,7 +11,7 @@ public sealed class ModuleImportItem : IAsyncDisposable
 
     public IJSObjectReference? ScriptReference { get; set; }
 
-    public Task IsLoaded => ModuleLoadedTcs.Task;
+    public Task Loaded => ModuleLoadedTcs.Task;
 
     private ValueAtomicBool _disposed;
 
