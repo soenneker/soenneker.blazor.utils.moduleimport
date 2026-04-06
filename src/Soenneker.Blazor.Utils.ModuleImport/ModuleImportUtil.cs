@@ -61,6 +61,30 @@ public sealed class ModuleImportUtil : IModuleImportUtil
         return item;
     }
 
+    public async ValueTask<IJSObjectReference> GetContentModuleReference(string name, CancellationToken cancellationToken = default)
+    {
+        CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
+
+        using (source)
+        {
+            ModuleImportItem item = await _contentModules.Get(name, linked);
+            await item.Loaded;
+            return item.ScriptReference!;
+        }
+    }
+
+    public async ValueTask<IJSObjectReference> GetExternalModuleReference(string url, CancellationToken cancellationToken = default)
+    {
+        CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
+
+        using (source)
+        {
+            ModuleImportItem item = await _externalModules.Get(url, linked);
+            await item.Loaded;
+            return item.ScriptReference!;
+        }
+    }
+
     public async ValueTask<ModuleImportItem> GetContentModule(string name, CancellationToken cancellationToken = default)
     {
         CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
@@ -75,22 +99,6 @@ public sealed class ModuleImportUtil : IModuleImportUtil
 
         using (source)
             return await _externalModules.Get(url, linked);
-    }
-
-    public async ValueTask<IJSObjectReference> ImportContentModule(string name, CancellationToken cancellationToken = default)
-    {
-        CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
-
-        using (source)
-            return await ImportContentModuleInternal(name, linked);
-    }
-
-    public async ValueTask<IJSObjectReference> ImportExternalModule(string url, CancellationToken cancellationToken = default)
-    {
-        CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
-
-        using (source)
-            return await ImportExternalModuleInternal(url, linked);
     }
 
     public async ValueTask DisposeContentModule(string name, CancellationToken cancellationToken = default)
@@ -113,20 +121,6 @@ public sealed class ModuleImportUtil : IModuleImportUtil
             ModuleImportItem item = await _externalModules.Get(url, linked);
             await item.DisposeAsync();
         }
-    }
-
-    private async ValueTask<IJSObjectReference> ImportContentModuleInternal(string name, CancellationToken cancellationToken)
-    {
-        ModuleImportItem item = await _contentModules.Get(name, cancellationToken);
-        await item.Loaded;
-        return item.ScriptReference!;
-    }
-
-    private async ValueTask<IJSObjectReference> ImportExternalModuleInternal(string url, CancellationToken cancellationToken)
-    {
-        ModuleImportItem item = await _externalModules.Get(url, cancellationToken);
-        await item.Loaded;
-        return item.ScriptReference!;
     }
 
     public async ValueTask DisposeAsync()

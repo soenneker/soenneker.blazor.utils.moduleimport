@@ -50,27 +50,16 @@ public interface IModuleImportUtil : IAsyncDisposable, IDisposable
     ValueTask<ModuleImportItem> GetExternalModule(string url, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Imports a JavaScript module from the application's static web assets (<c>./_content/</c>).
+    /// Gets a cached JS module reference from the _content folder.
+    /// Ensures the module is loaded before returning.
     /// </summary>
-    /// <param name="name">The module path relative to <c>./_content/</c>.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>
-    /// An <see cref="IJSObjectReference"/> representing the imported module, allowing invocation of its exported members.
-    /// </returns>
-    ValueTask<IJSObjectReference> ImportContentModule(string name, CancellationToken cancellationToken = default);
+    ValueTask<IJSObjectReference> GetContentModuleReference(string name, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Imports a JavaScript module from an external URL using dynamic <c>import()</c>.
+    /// Gets a cached JS module reference from an external URL.
+    /// Ensures the module is loaded before returning.
     /// </summary>
-    /// <param name="url">The absolute URL of the module.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>
-    /// An <see cref="IJSObjectReference"/> representing the imported module, allowing invocation of its exported members.
-    /// </returns>
-    /// <remarks>
-    /// This method uses dynamic <c>import()</c> and does not support Subresource Integrity (SRI).
-    /// </remarks>
-    ValueTask<IJSObjectReference> ImportExternalModule(string url, CancellationToken cancellationToken = default);
+    ValueTask<IJSObjectReference> GetExternalModuleReference(string url, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Disposes a previously imported content module and removes it from the cache.
