@@ -30,14 +30,15 @@ namespace Soenneker.Blazor.Utils.ModuleImport.Abstract;
 /// For SRI-enabled module loading, use a resource loader that injects a <c>&lt;script type="module"&gt;</c> tag.
 /// </para>
 /// </remarks>
-public interface IModuleImportUtil : IAsyncDisposable, IDisposable
+public interface IModuleImportUtil : IAsyncDisposable
 {
     /// <summary>
     /// Gets a cached content module item, initializing it if it has not yet been imported.
     /// </summary>
-    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <param name="path"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns>A <see cref="ModuleImportItem"/> representing the module and its load state.</returns>
-    ValueTask<ModuleImportItem> GetContentModule(string name, CancellationToken cancellationToken = default);
+    ValueTask<ModuleImportItem> GetContentModule(string path, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets a cached external module item, initializing it if it has not yet been imported.
@@ -51,7 +52,7 @@ public interface IModuleImportUtil : IAsyncDisposable, IDisposable
     /// Gets a cached JS module reference from the _content folder.
     /// Ensures the module is loaded before returning.
     /// </summary>
-    ValueTask<IJSObjectReference> GetContentModuleReference(string name, CancellationToken cancellationToken = default);
+    ValueTask<IJSObjectReference> GetContentModuleReference(string path, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets a cached JS module reference from an external URL.
@@ -62,15 +63,14 @@ public interface IModuleImportUtil : IAsyncDisposable, IDisposable
     /// <summary>
     /// Disposes a previously imported content module and removes it from the cache.
     /// </summary>
-    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <param name="name"></param>
     /// <returns>A <see cref="ValueTask"/> representing the asynchronous disposal operation.</returns>
-    ValueTask DisposeContentModule(string name, CancellationToken cancellationToken = default);
+    ValueTask<bool> DisposeContentModule(string name);
 
     /// <summary>
     /// Disposes a previously imported external module and removes it from the cache.
     /// </summary>
     /// <param name="url">The absolute URL of the module.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A <see cref="ValueTask"/> representing the asynchronous disposal operation.</returns>
-    ValueTask DisposeExternalModule(string url, CancellationToken cancellationToken = default);
+    ValueTask<bool> DisposeExternalModule(string url);
 }

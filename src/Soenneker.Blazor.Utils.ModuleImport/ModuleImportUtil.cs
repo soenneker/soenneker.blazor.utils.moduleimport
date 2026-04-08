@@ -1,22 +1,22 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.JSInterop;
 using Soenneker.Blazor.Utils.ModuleImport.Abstract;
 using Soenneker.Blazor.Utils.ModuleImport.Dtos;
 using Soenneker.Dictionaries.Singletons;
 using Soenneker.Extensions.CancellationTokens;
 using Soenneker.Utils.CancellationScopes;
+using System;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Soenneker.Blazor.Utils.ModuleImport;
 
-/// <inheritdoc cref="IModuleImportUtil"/>
+///<inheritdoc cref="IModuleImportUtil"/>
 public sealed class ModuleImportUtil : IModuleImportUtil
 {
     private readonly IJSRuntime _jsRuntime;
     private readonly SingletonDictionary<ModuleImportItem> _contentModules;
     private readonly SingletonDictionary<ModuleImportItem> _externalModules;
-
     private readonly CancellationScope _cancellationScope = new();
 
     public ModuleImportUtil(IJSRuntime jsRuntime)
@@ -27,13 +27,34 @@ public sealed class ModuleImportUtil : IModuleImportUtil
         _externalModules = new SingletonDictionary<ModuleImportItem>(InitializeExternalModule);
     }
 
-    private async ValueTask<ModuleImportItem> InitializeContentModule(string name, CancellationToken cancellationToken)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static string NormalizeContentModulePath(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        if (path[0] == '.')
+        {
+            if (path.Length >= 2 && path[1] == '/')
+                return path;
+
+            if (path.Length >= 3 && path[1] == '.' && path[2] == '/')
+                throw new ArgumentException("Relative parent paths (../) are not supported. Use './_content/...' or './...'.", nameof(path));
+        }
+
+        if (path[0] == '/')
+            return "." + path;
+
+        return "./" + path;
+    }
+
+    private async ValueTask<ModuleImportItem> InitializeContentModule(string path, CancellationToken cancellationToken)
     {
         var item = new ModuleImportItem();
 
         try
         {
-            item.ScriptReference = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", cancellationToken, name);
+            string resolved = NormalizeContentModulePath(path);
+            item.ScriptReference = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", cancellationToken, resolved);
             item.ModuleLoadedTcs.SetResult(true);
         }
         catch (Exception ex)
@@ -61,13 +82,13 @@ public sealed class ModuleImportUtil : IModuleImportUtil
         return item;
     }
 
-    public async ValueTask<IJSObjectReference> GetContentModuleReference(string name, CancellationToken cancellationToken = default)
+    public async ValueTask<IJSObjectReference> GetContentModuleReference(string path, CancellationToken cancellationToken = default)
     {
         CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
 
         using (source)
         {
-            ModuleImportItem item = await _contentModules.Get(name, linked);
+            ModuleImportItem item = await _contentModules.Get(path, linked);
             await item.Loaded;
             return item.ScriptReference!;
         }
@@ -85,12 +106,12 @@ public sealed class ModuleImportUtil : IModuleImportUtil
         }
     }
 
-    public async ValueTask<ModuleImportItem> GetContentModule(string name, CancellationToken cancellationToken = default)
+    public async ValueTask<ModuleImportItem> GetContentModule(string path, CancellationToken cancellationToken = default)
     {
         CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
 
         using (source)
-            return await _contentModules.Get(name, linked);
+            return await _contentModules.Get(path, linked);
     }
 
     public async ValueTask<ModuleImportItem> GetExternalModule(string url, CancellationToken cancellationToken = default)
@@ -101,26 +122,14 @@ public sealed class ModuleImportUtil : IModuleImportUtil
             return await _externalModules.Get(url, linked);
     }
 
-    public async ValueTask DisposeContentModule(string name, CancellationToken cancellationToken = default)
+    public ValueTask<bool> DisposeContentModule(string path)
     {
-        CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
-
-        using (source)
-        {
-            ModuleImportItem item = await _contentModules.Get(name, linked);
-            await item.DisposeAsync();
-        }
+        return _contentModules.TryRemoveAndDispose(path);
     }
 
-    public async ValueTask DisposeExternalModule(string url, CancellationToken cancellationToken = default)
+    public ValueTask<bool> DisposeExternalModule(string url)
     {
-        CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
-
-        using (source)
-        {
-            ModuleImportItem item = await _externalModules.Get(url, linked);
-            await item.DisposeAsync();
-        }
+        return _externalModules.TryRemoveAndDispose(url);
     }
 
     public async ValueTask DisposeAsync()
@@ -128,12 +137,5 @@ public sealed class ModuleImportUtil : IModuleImportUtil
         await _contentModules.DisposeAsync();
         await _externalModules.DisposeAsync();
         await _cancellationScope.DisposeAsync();
-    }
-
-    public void Dispose()
-    {
-        _contentModules.Dispose();
-        _externalModules.Dispose();
-        _cancellationScope.DisposeAsync().GetAwaiter().GetResult();
     }
 }
