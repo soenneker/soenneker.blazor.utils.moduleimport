@@ -14,7 +14,6 @@ namespace Soenneker.Blazor.Utils.ModuleImport.Abstract;
 /// <list type="bullet">
 /// <item>
 /// <description>
-/// <b>Content modules</b> – Loaded from the application's static web assets under <c>./_content/</c>.
 /// </description>
 /// </item>
 /// <item>
@@ -36,7 +35,6 @@ public interface IModuleImportUtil : IAsyncDisposable, IDisposable
     /// <summary>
     /// Gets a cached content module item, initializing it if it has not yet been imported.
     /// </summary>
-    /// <param name="name">The module path relative to <c>./_content/</c>.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A <see cref="ModuleImportItem"/> representing the module and its load state.</returns>
     ValueTask<ModuleImportItem> GetContentModule(string name, CancellationToken cancellationToken = default);
@@ -64,7 +62,6 @@ public interface IModuleImportUtil : IAsyncDisposable, IDisposable
     /// <summary>
     /// Disposes a previously imported content module and removes it from the cache.
     /// </summary>
-    /// <param name="name">The module path relative to <c>./_content/</c>.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A <see cref="ValueTask"/> representing the asynchronous disposal operation.</returns>
     ValueTask DisposeContentModule(string name, CancellationToken cancellationToken = default);
