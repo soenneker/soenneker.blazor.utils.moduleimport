@@ -1,20 +1,19 @@
 using Soenneker.Blazor.Utils.ModuleImport.Abstract;
-using Soenneker.Tests.FixturedUnit;
-using Xunit;
+using Soenneker.Tests.HostedUnit;
 
 namespace Soenneker.Blazor.Utils.ModuleImport.Tests;
 
-[Collection("Collection")]
-public class ModuleImportUtilTests : FixturedUnitTest
+[ClassDataSource<Host>(Shared = SharedType.PerTestSession)]
+public class ModuleImportUtilTests : HostedUnitTest
 {
     private readonly IModuleImportUtil _util;
 
-    public ModuleImportUtilTests(Fixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public ModuleImportUtilTests(Host host) : base(host)
     {
         _util = Resolve<IModuleImportUtil>(true);
     }
 
-    [Fact]
+    [Test]
     public void Default()
     {
 
