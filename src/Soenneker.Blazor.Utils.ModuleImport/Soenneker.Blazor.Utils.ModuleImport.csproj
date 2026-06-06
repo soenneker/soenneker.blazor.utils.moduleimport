@@ -45,7 +45,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.JSInterop" Version="10.0.8" />
-        <PackageReference Include="Soenneker.Dictionaries.Singletons" Version="4.0.49" />
+        <PackageReference Include="Soenneker.Dictionaries.Singletons" Version="4.0.50" />
         <PackageReference Include="Soenneker.Extensions.CancellationTokens" Version="4.0.18" />
         <PackageReference Include="Soenneker.Utils.CancellationScopes" Version="4.0.41" />
     </ItemGroup>
