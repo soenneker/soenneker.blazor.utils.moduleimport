@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Soenneker.Blazor.Utils.ModuleImport;
 
-///<inheritdoc cref="IModuleImportUtil"/>
+/// <inheritdoc cref="IModuleImportUtil"/>
 public sealed class ModuleImportUtil : IModuleImportUtil
 {
     private readonly IJSRuntime _jsRuntime;
