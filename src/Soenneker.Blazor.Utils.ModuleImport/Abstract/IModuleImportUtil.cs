@@ -52,12 +52,18 @@ public interface IModuleImportUtil : IAsyncDisposable
     /// Gets a cached JS module reference from the _content folder.
     /// Ensures the module is loaded before returning.
     /// </summary>
+    /// <param name="path">Path of the file or directory to use.</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>A task whose result is the requested javaScript Object Reference.</returns>
     ValueTask<IJSObjectReference> GetContentModuleReference(string path, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets a cached JS module reference from an external URL.
     /// Ensures the module is loaded before returning.
     /// </summary>
+    /// <param name="url">URL of the resource to target.</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>A task whose result is the requested javaScript Object Reference.</returns>
     ValueTask<IJSObjectReference> GetExternalModuleReference(string url, CancellationToken cancellationToken = default);
 
     /// <summary>
