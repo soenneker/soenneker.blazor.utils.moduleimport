@@ -13,8 +13,7 @@ namespace Soenneker.Blazor.Utils.ModuleImport.Abstract;
 /// This utility supports two module sources:
 /// <list type="bullet">
 /// <item>
-/// <description>
-/// </description>
+/// <description><b>Content modules</b> – Loaded from application or Razor class library static web assets using a relative URL.</description>
 /// </item>
 /// <item>
 /// <description>
@@ -33,24 +32,23 @@ namespace Soenneker.Blazor.Utils.ModuleImport.Abstract;
 public interface IModuleImportUtil : IAsyncDisposable
 {
     /// <summary>
-    /// Gets a cached content module item, initializing it if it has not yet been imported.
+    /// Gets a loaded, cached content module item, importing it when necessary.
     /// </summary>
-    /// <param name="path"></param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="path">A relative application or static-web-asset module URL.</param>
+    /// <param name="cancellationToken">Token used to cancel waiting for the import.</param>
     /// <returns>A <see cref="ModuleImportItem"/> representing the module and its load state.</returns>
     ValueTask<ModuleImportItem> GetContentModule(string path, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a cached external module item, initializing it if it has not yet been imported.
+    /// Gets a loaded, cached external module item, importing it when necessary.
     /// </summary>
-    /// <param name="url">The absolute URL of the module.</param>
+    /// <param name="url">The absolute HTTP or HTTPS URL of the module.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A <see cref="ModuleImportItem"/> representing the module and its load state.</returns>
     ValueTask<ModuleImportItem> GetExternalModule(string url, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a cached JS module reference from the _content folder.
-    /// Ensures the module is loaded before returning.
+    /// Gets a loaded, cached JavaScript module reference from application or Razor class library static web assets.
     /// </summary>
     /// <param name="path">Path of the file or directory to use.</param>
     /// <param name="cancellationToken">Token used to cancel the operation.</param>
@@ -61,7 +59,7 @@ public interface IModuleImportUtil : IAsyncDisposable
     /// Gets a cached JS module reference from an external URL.
     /// Ensures the module is loaded before returning.
     /// </summary>
-    /// <param name="url">URL of the resource to target.</param>
+    /// <param name="url">The absolute HTTP or HTTPS URL of the module.</param>
     /// <param name="cancellationToken">Token used to cancel the operation.</param>
     /// <returns>A task whose result is the requested javaScript Object Reference.</returns>
     ValueTask<IJSObjectReference> GetExternalModuleReference(string url, CancellationToken cancellationToken = default);
@@ -69,14 +67,14 @@ public interface IModuleImportUtil : IAsyncDisposable
     /// <summary>
     /// Disposes a previously imported content module and removes it from the cache.
     /// </summary>
-    /// <param name="name"></param>
-    /// <returns>A <see cref="ValueTask"/> representing the asynchronous disposal operation.</returns>
+    /// <param name="name">The same relative content-module path used to import the module.</param>
+    /// <returns><see langword="true"/> when a cached reference was removed; otherwise, <see langword="false"/>.</returns>
     ValueTask<bool> DisposeContentModule(string name);
 
     /// <summary>
     /// Disposes a previously imported external module and removes it from the cache.
     /// </summary>
     /// <param name="url">The absolute URL of the module.</param>
-    /// <returns>A <see cref="ValueTask"/> representing the asynchronous disposal operation.</returns>
+    /// <returns><see langword="true"/> when a cached reference was removed; otherwise, <see langword="false"/>.</returns>
     ValueTask<bool> DisposeExternalModule(string url);
 }

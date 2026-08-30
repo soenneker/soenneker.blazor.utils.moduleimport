@@ -11,17 +11,17 @@ namespace Soenneker.Blazor.Utils.ModuleImport.Dtos;
 public sealed class ModuleImportItem : IAsyncDisposable
 {
     /// <summary>
-    /// The module loaded tcs.
+    /// Coordinates completion of the module import.
     /// </summary>
-    public readonly TaskCompletionSource<bool> ModuleLoadedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    internal readonly TaskCompletionSource<bool> ModuleLoadedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     /// <summary>
-    /// Gets or sets script reference.
+    /// Gets the imported module reference after <see cref="Loaded"/> completes successfully.
     /// </summary>
-    public IJSObjectReference? ScriptReference { get; set; }
+    public IJSObjectReference? ScriptReference { get; internal set; }
 
     /// <summary>
-    /// Gets or sets loaded.
+    /// Gets the task that completes when the import succeeds or fails.
     /// </summary>
     public Task Loaded => ModuleLoadedTcs.Task;
 
