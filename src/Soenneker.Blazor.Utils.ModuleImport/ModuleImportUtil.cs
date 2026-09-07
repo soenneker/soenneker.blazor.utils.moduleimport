@@ -34,17 +34,20 @@ public sealed class ModuleImportUtil : IModuleImportUtil
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        if (!path.Equals(path.Trim(), StringComparison.Ordinal))
+        if (char.IsWhiteSpace(path[0]) || char.IsWhiteSpace(path[^1]))
             throw new ArgumentException("Module paths cannot start or end with whitespace.", nameof(path));
 
         if (path.Contains('\\') || path.Contains("://", StringComparison.Ordinal))
             throw new ArgumentException("Content module paths must be relative URLs that use forward slashes.", nameof(path));
 
-        string pathOnly = path.Split('?', '#')[0];
+        ReadOnlySpan<char> pathOnly = path.AsSpan();
+        int suffixStart = pathOnly.IndexOfAny('?', '#');
+        if (suffixStart >= 0)
+            pathOnly = pathOnly[..suffixStart];
 
-        foreach (string segment in pathOnly.Split('/'))
+        foreach (Range segment in pathOnly.Split('/'))
         {
-            if (segment == "..")
+            if (pathOnly[segment].SequenceEqual(".."))
                 throw new ArgumentException("Relative parent path segments are not supported.", nameof(path));
         }
 
