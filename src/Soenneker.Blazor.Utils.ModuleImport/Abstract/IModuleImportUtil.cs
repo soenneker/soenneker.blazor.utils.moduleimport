@@ -23,6 +23,10 @@ namespace Soenneker.Blazor.Utils.ModuleImport.Abstract;
 /// </list>
 /// <para>
 /// Imported modules are cached to prevent redundant network requests and ensure reuse across calls.
+/// Cached references are owned by this service. Callers must coordinate explicit eviction with all users of a reference.
+/// Content aliases with <c>./</c>, <c>/</c>, or no prefix share a cache entry without allocating normalized strings on cache hits.
+/// Paths beginning with <c>./</c> and canonical external URLs provide the cheapest repeated lookups.
+/// Concurrent callers share one import attempt. Failed attempts are removed so a later call can retry.
 /// </para>
 /// <para>
 /// This utility uses JavaScript dynamic <c>import()</c>. It does not support Subresource Integrity (SRI).
@@ -66,6 +70,7 @@ public interface IModuleImportUtil : IAsyncDisposable
 
     /// <summary>
     /// Disposes a previously imported content module and removes it from the cache.
+    /// Removes the entry immediately, then waits for any import already in progress before disposing its reference.
     /// </summary>
     /// <param name="name">The same relative content-module path used to import the module.</param>
     /// <returns><see langword="true"/> when a cached reference was removed; otherwise, <see langword="false"/>.</returns>
@@ -73,6 +78,7 @@ public interface IModuleImportUtil : IAsyncDisposable
 
     /// <summary>
     /// Disposes a previously imported external module and removes it from the cache.
+    /// Removes the entry immediately, then waits for any import already in progress before disposing its reference.
     /// </summary>
     /// <param name="url">The absolute URL of the module.</param>
     /// <returns><see langword="true"/> when a cached reference was removed; otherwise, <see langword="false"/>.</returns>

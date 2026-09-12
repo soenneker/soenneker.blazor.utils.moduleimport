@@ -1,32 +1,31 @@
+using Soenneker.Asyncs.Locks;
 using Microsoft.JSInterop;
 using Soenneker.Blazor.Utils.ModuleImport.Abstract;
 using Soenneker.Blazor.Utils.ModuleImport.Dtos;
-using Soenneker.Dictionaries.Singletons;
 using Soenneker.Atomics.ValueBools;
 using Soenneker.Extensions.CancellationTokens;
-using Soenneker.Utils.CancellationScopes;
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Soenneker.Blazor.Utils.ModuleImport;
 
-/// <inheritdoc cref="IModuleImportUtil"/>
 public sealed class ModuleImportUtil : IModuleImportUtil
 {
     private readonly IJSRuntime _jsRuntime;
-    private readonly SingletonDictionary<ModuleImportItem> _contentModules;
-    private readonly SingletonDictionary<ModuleImportItem> _externalModules;
-    private readonly CancellationScope _cancellationScope = new();
+    private ModuleCache? _contentModules;
+    private ModuleCache? _externalModules;
+    private readonly CancellationTokenSource _lifetimeCancellation = new();
+    private readonly CancellationToken _lifetimeToken;
     private ValueAtomicBool _disposed;
+    private readonly AsyncLock _lifetimeGate = new();
 
     public ModuleImportUtil(IJSRuntime jsRuntime)
     {
+        _lifetimeToken = _lifetimeCancellation.Token;
         _jsRuntime = jsRuntime ?? throw new ArgumentNullException(nameof(jsRuntime));
-
-        _contentModules = new SingletonDictionary<ModuleImportItem>(InitializeContentModule);
-        _externalModules = new SingletonDictionary<ModuleImportItem>(InitializeExternalModule);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -51,12 +50,8 @@ public sealed class ModuleImportUtil : IModuleImportUtil
                 throw new ArgumentException("Relative parent path segments are not supported.", nameof(path));
         }
 
-        if (path[0] == '.')
-        {
-            if (path.Length >= 2 && path[1] == '/')
-                return path;
-
-        }
+        if (path.StartsWith("./", StringComparison.Ordinal))
+            return path;
 
         if (path[0] == '/')
             return "." + path;
@@ -74,128 +69,177 @@ public sealed class ModuleImportUtil : IModuleImportUtil
         return uri.AbsoluteUri;
     }
 
-    private async ValueTask<ModuleImportItem> InitializeContentModule(string path, CancellationToken cancellationToken)
+    private async ValueTask<ModuleImportItem> InitializeModule(string path, CancellationToken cancellationToken)
     {
-        var item = new ModuleImportItem();
-
-        try
-        {
-            item.ScriptReference = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", cancellationToken, path);
-            item.ModuleLoadedTcs.SetResult(true);
-        }
-        catch (Exception ex)
-        {
-            item.ModuleLoadedTcs.SetException(ex);
-        }
-
-        return item;
+        // Publish only successful imports. Failed factories are never cached, so a
+        // failed waiter cannot evict a newer successful retry.
+        IJSObjectReference reference = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", cancellationToken, path);
+        return new ModuleImportItem(reference);
     }
 
-    private async ValueTask<ModuleImportItem> InitializeExternalModule(string url, CancellationToken cancellationToken)
-    {
-        var item = new ModuleImportItem();
-
-        try
-        {
-            item.ScriptReference = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", cancellationToken, url);
-            item.ModuleLoadedTcs.SetResult(true);
-        }
-        catch (Exception ex)
-        {
-            item.ModuleLoadedTcs.SetException(ex);
-        }
-
-        return item;
-    }
-
-    public async ValueTask<IJSObjectReference> GetContentModuleReference(string path, CancellationToken cancellationToken = default)
+    public ValueTask<IJSObjectReference> GetContentModuleReference(string path, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed.Value, this);
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(path);
+        ModuleCache? modules = Volatile.Read(ref _contentModules);
+        // Exact canonical hits are already validated. Avoid projecting through
+        // an intermediate ValueTask<ModuleImportItem> on the interop hot path.
+        if (modules is not null && path.StartsWith("./", StringComparison.Ordinal) && modules.TryGet(path, out ModuleImportItem? item))
+            return new ValueTask<IJSObjectReference>(item!.ScriptReference!);
+        return GetReference(GetContentModule(path, cancellationToken));
+    }
+
+    public ValueTask<IJSObjectReference> GetExternalModuleReference(string url, CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed.Value, this);
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(url);
+        ModuleCache? modules = Volatile.Read(ref _externalModules);
+        if (modules is not null && modules.TryGet(url, out ModuleImportItem? item))
+            return new ValueTask<IJSObjectReference>(item!.ScriptReference!);
+        return GetReference(GetExternalModule(url, cancellationToken));
+    }
+
+    private static ValueTask<IJSObjectReference> GetReference(ValueTask<ModuleImportItem> loading)
+    {
+        return loading.IsCompletedSuccessfully ? new ValueTask<IJSObjectReference>(loading.Result.ScriptReference!) : AwaitReference(loading);
+    }
+
+    private static async ValueTask<IJSObjectReference> AwaitReference(ValueTask<ModuleImportItem> loading)
+    {
+        return (await loading).ScriptReference!;
+    }
+
+    public ValueTask<ModuleImportItem> GetContentModule(string path, CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed.Value, this);
+        cancellationToken.ThrowIfCancellationRequested();
+        ValidateContentPathEdges(path);
+
+        ModuleCache modules = Volatile.Read(ref _contentModules) ?? CreateModules(true);
+        if (modules.TryGetContent(path, out ModuleImportItem? item))
+            return new ValueTask<ModuleImportItem>(item!);
+
         string normalizedPath = NormalizeContentModulePath(path);
-        CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
-
-        using (source)
-        {
-            ModuleImportItem item = await GetLoadedItem(_contentModules, normalizedPath, linked);
-            return item.ScriptReference ?? throw new InvalidOperationException("The content module loaded without returning a reference.");
-        }
+        return GetUncachedItem(modules, normalizedPath, cancellationToken);
     }
 
-    public async ValueTask<IJSObjectReference> GetExternalModuleReference(string url, CancellationToken cancellationToken = default)
+    private static void ValidateContentPathEdges(string path)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        // These invalid raw spellings could otherwise compare equal to a valid
+        // canonical path with whitespace inside its first segment.
+        if (char.IsWhiteSpace(path[0]) || char.IsWhiteSpace(path[^1]))
+            throw new ArgumentException("Module paths cannot start or end with whitespace.", nameof(path));
+    }
+
+    public ValueTask<ModuleImportItem> GetExternalModule(string url, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed.Value, this);
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(url);
+
+        ModuleCache modules = Volatile.Read(ref _externalModules) ?? CreateModules(false);
+        if (modules.TryGet(url, out ModuleImportItem? item))
+            return new ValueTask<ModuleImportItem>(item!);
+
         string normalizedUrl = NormalizeExternalModuleUrl(url);
-        CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
+        if (normalizedUrl != url && modules.TryGet(normalizedUrl, out item))
+            return new ValueTask<ModuleImportItem>(item!);
 
-        using (source)
-        {
-            ModuleImportItem item = await GetLoadedItem(_externalModules, normalizedUrl, linked);
-            return item.ScriptReference ?? throw new InvalidOperationException("The external module loaded without returning a reference.");
-        }
-    }
-
-    public async ValueTask<ModuleImportItem> GetContentModule(string path, CancellationToken cancellationToken = default)
-    {
-        ObjectDisposedException.ThrowIf(_disposed.Value, this);
-        string normalizedPath = NormalizeContentModulePath(path);
-        CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
-
-        using (source)
-            return await GetLoadedItem(_contentModules, normalizedPath, linked);
-    }
-
-    public async ValueTask<ModuleImportItem> GetExternalModule(string url, CancellationToken cancellationToken = default)
-    {
-        ObjectDisposedException.ThrowIf(_disposed.Value, this);
-        string normalizedUrl = NormalizeExternalModuleUrl(url);
-        CancellationToken linked = _cancellationScope.CancellationToken.Link(cancellationToken, out CancellationTokenSource? source);
-
-        using (source)
-            return await GetLoadedItem(_externalModules, normalizedUrl, linked);
+        return GetUncachedItem(modules, normalizedUrl, cancellationToken);
     }
 
     public ValueTask<bool> DisposeContentModule(string path)
     {
         ObjectDisposedException.ThrowIf(_disposed.Value, this);
-        return _contentModules.TryRemoveAndDispose(NormalizeContentModulePath(path));
+        string normalized = NormalizeContentModulePath(path);
+        return Volatile.Read(ref _contentModules)?.Evict(normalized) ?? new ValueTask<bool>(false);
     }
 
     public ValueTask<bool> DisposeExternalModule(string url)
     {
         ObjectDisposedException.ThrowIf(_disposed.Value, this);
-        return _externalModules.TryRemoveAndDispose(NormalizeExternalModuleUrl(url));
+        string normalized = NormalizeExternalModuleUrl(url);
+        return Volatile.Read(ref _externalModules)?.Evict(normalized) ?? new ValueTask<bool>(false);
     }
 
-    private static async ValueTask<ModuleImportItem> GetLoadedItem(SingletonDictionary<ModuleImportItem> modules, string key,
+    private ModuleCache CreateModules(bool content)
+    {
+        using (_lifetimeGate.LockSync())
+        {
+            ObjectDisposedException.ThrowIf(_disposed.Value, this);
+            if (content)
+                return _contentModules ??= new ModuleCache(InitializeModule);
+            return _externalModules ??= new ModuleCache(InitializeModule);
+        }
+    }
+
+    private async ValueTask<ModuleImportItem> GetUncachedItem(ModuleCache modules, string key,
         CancellationToken cancellationToken)
     {
-        ModuleImportItem item = await modules.Get(key, cancellationToken);
+        CancellationToken linked = GetLifetimeToken().Link(cancellationToken, out CancellationTokenSource? source);
 
+        using (source)
+            return await modules.Get(key, linked);
+    }
+
+    private CancellationToken GetLifetimeToken()
+    {
+        using (_lifetimeGate.LockSync())
+        {
+            ObjectDisposedException.ThrowIf(_disposed.Value, this);
+            return _lifetimeToken;
+        }
+    }
+
+    private async ValueTask CancelLifetime()
+    {
         try
         {
-            await item.Loaded.WaitAsync(cancellationToken);
-            return item;
+            await _lifetimeCancellation.CancelAsync().ConfigureAwait(false);
         }
         catch
         {
-            if (modules.TryRemove(key, out ModuleImportItem? cachedItem) && cachedItem is not null)
-                await cachedItem.DisposeAsync();
-
-            throw;
+            // A cancellation callback must not prevent reference cleanup.
+        }
+        finally
+        {
+            _lifetimeCancellation.Dispose();
         }
     }
 
-    /// <summary>
-    /// Asynchronously releases resources used by the current instance.
-    /// </summary>
-    /// <returns>A task that represents the asynchronous operation.</returns>
     public async ValueTask DisposeAsync()
     {
-        if (!_disposed.TrySetTrue())
-            return;
+        using (await _lifetimeGate.Lock().ConfigureAwait(false))
+        {
+            if (!_disposed.TrySetTrue())
+                return;
+        }
 
-        await _cancellationScope.DisposeAsync();
-        await _contentModules.DisposeAsync();
-        await _externalModules.DisposeAsync();
+        await CancelLifetime();
+        List<Exception>? exceptions = null;
+        try
+        {
+            if (_contentModules is not null)
+                await _contentModules.DisposeAsync();
+        }
+        catch (Exception exception)
+        {
+            (exceptions ??= []).Add(exception);
+        }
+        try
+        {
+            if (_externalModules is not null)
+                await _externalModules.DisposeAsync();
+        }
+        catch (Exception exception)
+        {
+            (exceptions ??= []).Add(exception);
+        }
+        if (exceptions is not null)
+            throw new AggregateException("One or more JavaScript modules could not be disposed.", exceptions);
     }
+
 }
