@@ -4,6 +4,7 @@ using Soenneker.Blazor.Utils.ModuleImport.Abstract;
 using Soenneker.Blazor.Utils.ModuleImport.Dtos;
 using Soenneker.Atomics.ValueBools;
 using Soenneker.Extensions.CancellationTokens;
+using Soenneker.Utils.CancellationScopes;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -17,15 +18,13 @@ public sealed class ModuleImportUtil : IModuleImportUtil
     private readonly IJSRuntime _jsRuntime;
     private ModuleCache? _contentModules;
     private ModuleCache? _externalModules;
-    private readonly CancellationTokenSource _lifetimeCancellation = new();
-    private readonly CancellationToken _lifetimeToken;
+    private readonly CancellationScope _lifetimeCancellation = new();
     private ValueAtomicBool _disposed;
     private readonly AsyncLock _lifetimeGate = new();
 
     public ModuleImportUtil(IJSRuntime jsRuntime)
     {
-        _lifetimeToken = _lifetimeCancellation.Token;
-        _jsRuntime = jsRuntime ?? throw new ArgumentNullException(nameof(jsRuntime));
+        _jsRuntime = jsRuntime;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -198,23 +197,7 @@ public sealed class ModuleImportUtil : IModuleImportUtil
         using (_lifetimeGate.LockSync())
         {
             ObjectDisposedException.ThrowIf(_disposed.Value, this);
-            return _lifetimeToken;
-        }
-    }
-
-    private async ValueTask CancelLifetime()
-    {
-        try
-        {
-            await _lifetimeCancellation.CancelAsync().ConfigureAwait(false);
-        }
-        catch
-        {
-            // A cancellation callback must not prevent reference cleanup.
-        }
-        finally
-        {
-            _lifetimeCancellation.Dispose();
+            return _lifetimeCancellation.CancellationToken;
         }
     }
 
@@ -226,7 +209,7 @@ public sealed class ModuleImportUtil : IModuleImportUtil
                 return;
         }
 
-        await CancelLifetime();
+        await _lifetimeCancellation.DisposeAsync();
         List<Exception>? exceptions = null;
         try
         {
