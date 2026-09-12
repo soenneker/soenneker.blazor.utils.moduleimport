@@ -48,6 +48,6 @@
         <PackageReference Include="Microsoft.JSInterop" Version="10.0.12" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
         <PackageReference Include="Soenneker.Atomics.ValueBools" Version="4.0.38" />
-        <PackageReference Include="Soenneker.Extensions.CancellationTokens" Version="4.0.24" />
+        <PackageReference Include="Soenneker.Extensions.CancellationTokens" Version="4.0.25" />
     </ItemGroup>
 </Project>
