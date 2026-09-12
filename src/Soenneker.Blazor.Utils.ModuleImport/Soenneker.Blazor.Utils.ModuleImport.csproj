@@ -44,10 +44,10 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Soenneker.Asyncs.Locks" Version="4.0.82" />
+        <PackageReference Include="Soenneker.Asyncs.Locks" Version="4.0.83" />
         <PackageReference Include="Microsoft.JSInterop" Version="10.0.12" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
-        <PackageReference Include="Soenneker.Atomics.ValueBools" Version="4.0.38" />
-        <PackageReference Include="Soenneker.Extensions.CancellationTokens" Version="4.0.24" />
+        <PackageReference Include="Soenneker.Atomics.ValueBools" Version="4.0.40" />
+        <PackageReference Include="Soenneker.Extensions.CancellationTokens" Version="4.0.25" />
     </ItemGroup>
 </Project>
