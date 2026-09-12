@@ -37,7 +37,8 @@ public sealed class ModuleImportUtil : IModuleImportUtil
             throw new ArgumentException("Module paths cannot start or end with whitespace.", nameof(path));
 
         if (path.Contains('\\') || path.Contains("://", StringComparison.Ordinal))
-            throw new ArgumentException("Content module paths must be relative URLs that use forward slashes.", nameof(path));
+            throw new ArgumentException("Content module paths must be relative URLs that use forward slashes.",
+                nameof(path));
 
         ReadOnlySpan<char> pathOnly = path.AsSpan();
         int suffixStart = pathOnly.IndexOfAny('?', '#');
@@ -46,7 +47,7 @@ public sealed class ModuleImportUtil : IModuleImportUtil
 
         foreach (Range segment in pathOnly.Split('/'))
         {
-            if (pathOnly[segment].SequenceEqual(".."))
+            if (pathOnly[segment] is "..")
                 throw new ArgumentException("Relative parent path segments are not supported.", nameof(path));
         }
 
@@ -63,7 +64,8 @@ public sealed class ModuleImportUtil : IModuleImportUtil
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(url);
 
-        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
+        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) ||
+            (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
             throw new ArgumentException("External module URLs must be absolute HTTP or HTTPS URLs.", nameof(url));
 
         return uri.AbsoluteUri;
@@ -73,11 +75,13 @@ public sealed class ModuleImportUtil : IModuleImportUtil
     {
         // Publish only successful imports. Failed factories are never cached, so a
         // failed waiter cannot evict a newer successful retry.
-        IJSObjectReference reference = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", cancellationToken, path);
+        IJSObjectReference reference =
+            await _jsRuntime.InvokeAsync<IJSObjectReference>("import", cancellationToken, path);
         return new ModuleImportItem(reference);
     }
 
-    public ValueTask<IJSObjectReference> GetContentModuleReference(string path, CancellationToken cancellationToken = default)
+    public ValueTask<IJSObjectReference> GetContentModuleReference(string path,
+        CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed.Value, this);
         cancellationToken.ThrowIfCancellationRequested();
@@ -85,12 +89,14 @@ public sealed class ModuleImportUtil : IModuleImportUtil
         ModuleCache? modules = Volatile.Read(ref _contentModules);
         // Exact canonical hits are already validated. Avoid projecting through
         // an intermediate ValueTask<ModuleImportItem> on the interop hot path.
-        if (modules is not null && path.StartsWith("./", StringComparison.Ordinal) && modules.TryGet(path, out ModuleImportItem? item))
+        if (modules is not null && path.StartsWith("./", StringComparison.Ordinal) &&
+            modules.TryGet(path, out ModuleImportItem? item))
             return new ValueTask<IJSObjectReference>(item!.ScriptReference!);
         return GetReference(GetContentModule(path, cancellationToken));
     }
 
-    public ValueTask<IJSObjectReference> GetExternalModuleReference(string url, CancellationToken cancellationToken = default)
+    public ValueTask<IJSObjectReference> GetExternalModuleReference(string url,
+        CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed.Value, this);
         cancellationToken.ThrowIfCancellationRequested();
@@ -103,7 +109,9 @@ public sealed class ModuleImportUtil : IModuleImportUtil
 
     private static ValueTask<IJSObjectReference> GetReference(ValueTask<ModuleImportItem> loading)
     {
-        return loading.IsCompletedSuccessfully ? new ValueTask<IJSObjectReference>(loading.Result.ScriptReference!) : AwaitReference(loading);
+        return loading.IsCompletedSuccessfully
+            ? new ValueTask<IJSObjectReference>(loading.Result.ScriptReference!)
+            : AwaitReference(loading);
     }
 
     private static async ValueTask<IJSObjectReference> AwaitReference(ValueTask<ModuleImportItem> loading)
@@ -229,6 +237,7 @@ public sealed class ModuleImportUtil : IModuleImportUtil
         {
             (exceptions ??= []).Add(exception);
         }
+
         try
         {
             if (_externalModules is not null)
@@ -238,8 +247,8 @@ public sealed class ModuleImportUtil : IModuleImportUtil
         {
             (exceptions ??= []).Add(exception);
         }
+
         if (exceptions is not null)
             throw new AggregateException("One or more JavaScript modules could not be disposed.", exceptions);
     }
-
 }
