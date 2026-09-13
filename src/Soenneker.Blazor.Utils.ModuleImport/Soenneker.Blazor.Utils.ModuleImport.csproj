@@ -49,6 +49,6 @@
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
         <PackageReference Include="Soenneker.Atomics.ValueBools" Version="4.0.41" />
         <PackageReference Include="Soenneker.Extensions.CancellationTokens" Version="4.0.25" />
-        <PackageReference Include="Soenneker.Utils.CancellationScopes" Version="4.0.57" />
+        <PackageReference Include="Soenneker.Utils.CancellationScopes" Version="4.0.58" />
     </ItemGroup>
 </Project>
