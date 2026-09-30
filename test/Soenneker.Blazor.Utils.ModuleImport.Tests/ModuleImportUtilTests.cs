@@ -15,7 +15,7 @@ public sealed class ModuleImportUtilTests : HostedUnitTest
     }
 
     [Test]
-    public async Task Equivalent_content_paths_share_one_import(CancellationToken cancellationToken)
+    public async ValueTask Equivalent_content_paths_share_one_import(CancellationToken cancellationToken)
     {
         var jsRuntime = new TestJsRuntime();
         await using var modules = new ModuleImportUtil(jsRuntime);
@@ -28,7 +28,7 @@ public sealed class ModuleImportUtilTests : HostedUnitTest
     }
 
     [Test]
-    public async Task Failed_import_can_be_retried(CancellationToken cancellationToken)
+    public async ValueTask Failed_import_can_be_retried(CancellationToken cancellationToken)
     {
         var jsRuntime = new TestJsRuntime(failuresBeforeSuccess: 1);
         await using var modules = new ModuleImportUtil(jsRuntime);
