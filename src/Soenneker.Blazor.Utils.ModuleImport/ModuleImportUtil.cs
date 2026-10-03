@@ -1,4 +1,3 @@
-using Soenneker.Asyncs.Locks;
 using Microsoft.JSInterop;
 using Soenneker.Blazor.Utils.ModuleImport.Abstract;
 using Soenneker.Blazor.Utils.ModuleImport.Dtos;
@@ -20,7 +19,7 @@ public sealed class ModuleImportUtil : IModuleImportUtil
     private ModuleCache? _externalModules;
     private readonly CancellationScope _lifetimeCancellation = new();
     private ValueAtomicBool _disposed;
-    private readonly AsyncLock _lifetimeGate = new();
+    private readonly Lock _lifetimeGate = new();
 
     public ModuleImportUtil(IJSRuntime jsRuntime)
     {
@@ -174,7 +173,7 @@ public sealed class ModuleImportUtil : IModuleImportUtil
 
     private ModuleCache CreateModules(bool content)
     {
-        using (_lifetimeGate.LockSync())
+        lock (_lifetimeGate)
         {
             ObjectDisposedException.ThrowIf(_disposed.Value, this);
             if (content)
@@ -194,7 +193,7 @@ public sealed class ModuleImportUtil : IModuleImportUtil
 
     private CancellationToken GetLifetimeToken()
     {
-        using (_lifetimeGate.LockSync())
+        lock (_lifetimeGate)
         {
             ObjectDisposedException.ThrowIf(_disposed.Value, this);
             return _lifetimeCancellation.CancellationToken;
@@ -203,7 +202,7 @@ public sealed class ModuleImportUtil : IModuleImportUtil
 
     public async ValueTask DisposeAsync()
     {
-        using (await _lifetimeGate.Lock().ConfigureAwait(false))
+        lock (_lifetimeGate)
         {
             if (!_disposed.TrySetTrue())
                 return;

@@ -1,4 +1,3 @@
-using Soenneker.Asyncs.Locks;
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
@@ -13,7 +12,7 @@ internal sealed class ModuleCache(Func<string, CancellationToken, ValueTask<Modu
     : IAsyncDisposable
 {
     private readonly ConcurrentDictionary<string, object> _entries = new(1, 4, StringComparer.Ordinal);
-    private readonly AsyncLock _gate = new();
+    private readonly Lock _gate = new();
     private bool _disposed;
 
     internal bool TryGet(string path, out ModuleImportItem? item)
@@ -33,7 +32,7 @@ internal sealed class ModuleCache(Func<string, CancellationToken, ValueTask<Modu
         cancellationToken.ThrowIfCancellationRequested();
         TaskCompletionSource<ModuleImportItem> entry;
         bool created = false;
-        using (await _gate.Lock(cancellationToken).ConfigureAwait(false))
+        lock (_gate)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             if (!_entries.TryGetValue(path, out object? value))
@@ -110,7 +109,7 @@ internal sealed class ModuleCache(Func<string, CancellationToken, ValueTask<Modu
     internal async ValueTask<bool> Evict(string path)
     {
         object? entry;
-        using (await _gate.Lock().ConfigureAwait(false))
+        lock (_gate)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             if (!_entries.TryRemove(path, out entry))
@@ -134,7 +133,7 @@ internal sealed class ModuleCache(Func<string, CancellationToken, ValueTask<Modu
     public async ValueTask DisposeAsync()
     {
         ICollection<object> entries;
-        using (await _gate.Lock().ConfigureAwait(false))
+        lock (_gate)
         {
             if (_disposed)
                 return;
