@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework>net11.0</TargetFramework>
         <IsAotCompatible>true</IsAotCompatible>
         <Nullable>enable</Nullable>
         <Platforms>AnyCPU</Platforms>
@@ -9,7 +9,7 @@
 
     <PropertyGroup>
         <Description>A Blazor utility library assisting with asynchronous module loading</Description>
-        <Version Condition="'$(BUILD_VERSION)' == ''">4.0.0</Version>
+        <Version Condition="'$(BUILD_VERSION)' == ''">11.0.0</Version>
         <Version Condition="'$(BUILD_VERSION)' != ''">$(BUILD_VERSION)</Version>
         <AssemblyName>Soenneker.Blazor.Utils.ModuleImport</AssemblyName>
         <PackageId>Soenneker.Blazor.Utils.ModuleImport</PackageId>
@@ -45,8 +45,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.JSInterop" Version="10.0.14" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.13" />
+        <PackageReference Include="Microsoft.JSInterop" Version="11.0.0-rc.3.26522.148" />
         <PackageReference Include="Soenneker.Atomics.ValueBools" Version="4.0.54" />
         <PackageReference Include="Soenneker.Extensions.CancellationTokens" Version="4.0.36" />
         <PackageReference Include="Soenneker.Utils.CancellationScopes" Version="4.0.75" />
