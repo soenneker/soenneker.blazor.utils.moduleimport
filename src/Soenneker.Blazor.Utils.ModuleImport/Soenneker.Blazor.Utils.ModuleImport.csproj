@@ -47,7 +47,7 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.JSInterop" Version="11.0.0" />
         <PackageReference Include="Soenneker.Atomics.ValueBools" Version="11.0.55" />
-        <PackageReference Include="Soenneker.Extensions.CancellationTokens" Version="11.0.37" />
-        <PackageReference Include="Soenneker.Utils.CancellationScopes" Version="11.0.77" />
+        <PackageReference Include="Soenneker.Extensions.CancellationTokens" Version="11.0.38" />
+        <PackageReference Include="Soenneker.Utils.CancellationScopes" Version="11.0.78" />
     </ItemGroup>
 </Project>
